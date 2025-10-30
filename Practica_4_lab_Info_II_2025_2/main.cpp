@@ -4,7 +4,7 @@
 
 using namespace std;
 
-void printMenu() {
+void imprimirMenu() {
     cout << "\n========== SIMULADOR DE RED DE ENRUTADORES ==========" << endl;
     cout << "1.  Agregar router" << endl;
     cout << "2.  Eliminar router" << endl;
@@ -21,58 +21,57 @@ void printMenu() {
     cout << "13. Crear red de ejemplo (A, B, C, D)" << endl;
     cout << "0.  Salir" << endl;
     cout << "====================================================" << endl;
-    cout << "Opción: ";
+    cout << "Opcion: ";
 }
 
-void createExampleNetwork(Red& net) {
+void crearRedDeEjemplo(Red& red) {
     cout << "\nCreando red de ejemplo del PDF..." << endl;
 
     // Limpiar red actual
-    net = Red();
+    red = Red();
 
     // Crear la red del ejemplo: A-B-C-D
-    net.addRouter("A");
-    net.addRouter("B");
-    net.addRouter("C");
-    net.addRouter("D");
+    red.agregarRouter("A");
+    red.agregarRouter("B");
+    red.agregarRouter("C");
+    red.agregarRouter("D");
 
-    net.addLink("A", "B", 4);
-    net.addLink("A", "C", 10);
-    net.addLink("B", "D", 1);
-    net.addLink("C", "D", 2);
+    red.agregarEnlace("A", "B", 4);
+    red.agregarEnlace("A", "C", 10);
+    red.agregarEnlace("B", "D", 1);
+    red.agregarEnlace("C", "D", 2);
 
-    net.updateAllRoutingTables();
+    red.actualizarTodasLasTablas();
 
     cout << "Red de ejemplo creada exitosamente." << endl;
 }
 
 int main() {
     Red red;
-    int option;
-    string input;
+    int opcion;
 
     cout << "=== BIENVENIDO AL SIMULADOR DE RED DE ENRUTADORES ===" << endl;
     cout << "Este programa simula el enrutamiento en una red." << endl;
 
     do {
-        printMenu();
-        cin >> option;
+        imprimirMenu();
+        cin >> opcion;
         cin.ignore(); // Limpiar el buffer del newline
 
-        switch(option) {
+        switch(opcion) {
         case 1: { // Agregar router
             cout << "\nIngrese ID del router: ";
-            string routerId;
-            getline(cin, routerId);
-            red.addRouter(routerId);
+            string idRouter;
+            getline(cin, idRouter);
+            red.agregarRouter(idRouter);
             break;
         }
 
         case 2: { // Eliminar router
             cout << "\nIngrese ID del router a eliminar: ";
-            string routerId;
-            getline(cin, routerId);
-            red.removeRouter(routerId);
+            string idRouter;
+            getline(cin, idRouter);
+            red.eliminarRouter(idRouter);
             break;
         }
 
@@ -86,12 +85,12 @@ int main() {
             getline(cin, r2);
 
             cout << "Ingrese el costo del enlace: ";
-            int cost;
-            cin >> cost;
+            int costo;
+            cin >> costo;
             cin.ignore();
 
-            red.addLink(r1, r2, cost);
-            red.updateAllRoutingTables();
+            red.agregarEnlace(r1, r2, costo);
+            red.actualizarTodasLasTablas();
             break;
         }
 
@@ -104,7 +103,7 @@ int main() {
             string r2;
             getline(cin, r2);
 
-            red.removeLink(r1, r2);
+            red.eliminarEnlace(r1, r2);
             break;
         }
 
@@ -118,108 +117,108 @@ int main() {
             getline(cin, r2);
 
             cout << "Ingrese el nuevo costo: ";
-            int cost;
-            cin >> cost;
+            int costo;
+            cin >> costo;
             cin.ignore();
 
-            red.updateLinkCost(r1, r2, cost);
+            red.actualizarCostoEnlace(r1, r2, costo);
             break;
         }
 
         case 6: { // Mostrar red
-            red.displayNetwork();
+            red.mostrarRed();
             break;
         }
 
         case 7: { // Mostrar tabla de un router
             cout << "\nIngrese ID del router: ";
-            string routerId;
-            getline(cin, routerId);
-            red.displayRouterTable(routerId);
+            string idRouter;
+            getline(cin, idRouter);
+            red.mostrarTablaRouter(idRouter);
             break;
         }
 
         case 8: { // Consultar costo
             cout << "\nIngrese router origen: ";
-            string source;
-            getline(cin, source);
+            string origen;
+            getline(cin, origen);
 
             cout << "Ingrese router destino: ";
-            string dest;
-            getline(cin, dest);
+            string destino;
+            getline(cin, destino);
 
-            int cost = red.getCostBetween(source, dest);
-            if (cost == -1) {
-                cout << "No hay ruta entre " << source << " y " << dest << endl;
-            } else if (cost == 0) {
+            int costo = red.obtenerCostoEntre(origen, destino);
+            if (costo == -1) {
+                cout << "No hay ruta entre " << origen << " y " << destino << endl;
+            } else if (costo == 0) {
                 cout << "El origen y destino son el mismo router." << endl;
             } else {
-                cout << "Costo de " << source << " a " << dest << ": " << cost << endl;
+                cout << "Costo de " << origen << " a " << destino << ": " << costo << endl;
             }
             break;
         }
 
         case 9: { // Consultar camino
             cout << "\nIngrese router origen: ";
-            string source;
-            getline(cin, source);
+            string origen;
+            getline(cin, origen);
 
             cout << "Ingrese router destino: ";
-            string dest;
-            getline(cin, dest);
+            string destino;
+            getline(cin, destino);
 
-            vector<string> path = red.getPathBetween(source, dest);
+            vector<string> camino = red.obtenerCaminoEntre(origen, destino);
 
-            if (path.empty()) {
-                cout << "No hay ruta entre " << source << " y " << dest << endl;
+            if (camino.empty()) {
+                cout << "No hay ruta entre " << origen << " y " << destino << endl;
             } else {
-                cout << "Camino de " << source << " a " << dest << ": ";
-                for (size_t i = 0; i < path.size(); i++) {
-                    cout << path[i];
-                    if (i < path.size() - 1) {
+                cout << "Camino de " << origen << " a " << destino << ": ";
+                for (size_t i = 0; i < camino.size(); i++) {
+                    cout << camino[i];
+                    if (i < camino.size() - 1) {
                         cout << " -> ";
                     }
                 }
                 cout << endl;
 
-                int cost = red.getCostBetween(source, dest);
-                cout << "Costo total: " << cost << endl;
+                int costo = red.obtenerCostoEntre(origen, destino);
+                cout << "Costo total: " << costo << endl;
             }
             break;
         }
 
         case 10: { // Cargar desde archivo
             cout << "\nIngrese nombre del archivo: ";
-            string filename;
-            getline(cin, filename);
-            red.loadFromFile(filename);
+            string nombreArchivo;
+            getline(cin, nombreArchivo);
+            red.cargarDesdeArchivo(nombreArchivo);
             break;
         }
 
         case 11: { // Guardar en archivo
             cout << "\nIngrese nombre del archivo: ";
-            string filename;
-            getline(cin, filename);
-            red.saveToFile(filename);
+            string nombreArchivo;
+            getline(cin, nombreArchivo);
+            red.guardarEnArchivo(nombreArchivo);
             break;
         }
 
         case 12: { // Generar red aleatoria
-            cout << "\nIngrese número de routers: ";
+            cout << "\nIngrese numero de routers: ";
             int numRouters;
             cin >> numRouters;
 
-            cout << "Ingrese número de enlaces: ";
-            int numLinks;
-            cin >> numLinks;
+            cout << "Ingrese numero de enlaces: ";
+            int numEnlaces;
+            cin >> numEnlaces;
             cin.ignore();
 
-            red.generateRandomNetwork(numRouters, numLinks);
+            red.generarRedAleatoria(numRouters, numEnlaces);
             break;
         }
 
         case 13: { // Red de ejemplo
-            createExampleNetwork(red);
+            crearRedDeEjemplo(red);
             break;
         }
 
@@ -229,10 +228,10 @@ int main() {
         }
 
         default:
-            cout << "\nOpción inválida. Intente de nuevo." << endl;
+            cout << "\nOpcion invalida. Intente de nuevo." << endl;
         }
 
-    } while (option != 0);
+    } while (opcion != 0);
 
     return 0;
 }

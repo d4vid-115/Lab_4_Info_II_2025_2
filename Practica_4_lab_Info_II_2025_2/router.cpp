@@ -2,86 +2,86 @@
 #include <iostream>
 #include <iomanip>
 
-Router::Router() : id(""), TablaDeEnrutamiento() {}
+Router::Router() : id(""), tablaEnrutamiento() {}
 
-Router::Router(string routerId) : id(routerId), TablaDeEnrutamiento(routerId) {}
+Router::Router(string idRouter) : id(idRouter), tablaEnrutamiento(idRouter) {}
 
-string Router::getId() const {
+string Router::obtenerId() const {
     return id;
 }
 
-map<string, int> Router::getNeighbors() const {
-    return neighbors;
+map<string, int> Router::obtenerVecinos() const {
+    return vecinos;
 }
 
-TablaDeEnrutamiento Router::getRoutingTable() const {
-    return TablaDeEnrutamiento;
+TablaDeEnrutamiento Router::obtenerTablaEnrutamiento() const {
+    return tablaEnrutamiento;
 }
 
-TablaDeEnrutamiento* Router::getRoutingTablePtr() {
-    return &TablaDeEnrutamiento;
+TablaDeEnrutamiento* Router::obtenerPunteroTablaEnrutamiento() {
+    return &tablaEnrutamiento;
 }
 
-void Router::addNeighbor(string neighborId, int cost) {
-    neighbors[neighborId] = cost;
+void Router::agregarVecino(string idVecino, int costo) {
+    vecinos[idVecino] = costo;
 }
 
-void Router::removeNeighbor(string neighborId) {
-    neighbors.erase(neighborId);
+void Router::eliminarVecino(string idVecino) {
+    vecinos.erase(idVecino);
 }
 
-void Router::updateNeighborCost(string neighborId, int newCost) {
-    if (neighbors.find(neighborId) != neighbors.end()) {
-        neighbors[neighborId] = newCost;
+void Router::actualizarCostoVecino(string idVecino, int nuevoCosto) {
+    if (vecinos.find(idVecino) != vecinos.end()) {
+        vecinos[idVecino] = nuevoCosto;
     }
 }
 
-bool Router::isNeighbor(string routerId) const {
-    return neighbors.find(routerId) != neighbors.end();
+bool Router::esVecino(string idRouter) const {
+    return vecinos.find(idRouter) != vecinos.end();
 }
 
-void Router::updateRoutingTable(const map<string, RoutingEntry>& newTable) {
-    TablaDeEnrutamiento.updateTable(newTable);
+void Router::actualizarTablaEnrutamiento(const map<string, EntradaDeEnrutamiento>& nuevaTabla) {
+    tablaEnrutamiento.actualizarTabla(nuevaTabla);
 }
 
-void Router::displayRoutingTable() const {
-    TablaDeEnrutamiento.display();
+void Router::mostrarTablaEnrutamiento() const {
+    tablaEnrutamiento.mostrar();
 }
 
-int Router::getCostTo(string destination) const {
-    return TablaDeEnrutamiento.getCostTo(destination);
+int Router::obtenerCostoHacia(string destino) const {
+    return tablaEnrutamiento.obtenerCostoHacia(destino);
 }
 
-vector<string> Router::getPathTo(string destination) const {
-    return TablaDeEnrutamiento.getPathTo(destination);
+vector<string> Router::obtenerCaminoHacia(string destino) const {
+    return tablaEnrutamiento.obtenerCaminoHacia(destino);
 }
 
-string Router::getNextHopTo(string destination) const {
-    return TablaDeEnrutamiento.getNextHopTo(destination);
+string Router::obtenerSiguienteSaltoHacia(string destino) const {
+    return tablaEnrutamiento.obtenerSiguienteSaltoHacia(destino);
 }
 
-bool Router::hasRouteTo(string destination) const {
-    return TablaDeEnrutamiento.hasRouteTo(destination);
+bool Router::tieneRutaHacia(string destino) const {
+    return tablaEnrutamiento.tieneRutaHacia(destino);
 }
 
-void Router::displayStatistics() const {
-    cout << "\n=== Estadísticas del Router " << id << " ===" << endl;
-    cout << "Vecinos directos: " << neighbors.size() << endl;
-    cout << "Rutas conocidas: " << TablaDeEnrutamiento.getNumEntries() << endl;
+void Router::mostrarEstadisticas() const {
+    cout << "\n=== Estadisticas del Router " << id << " ===" << endl;
+    cout << "Vecinos directos: " << vecinos.size() << endl;
+    cout << "Rutas conocidas: " << tablaEnrutamiento.obtenerNumeroEntradas() << endl;
 
-    if (TablaDeEnrutamiento.getNumEntries() > 0) {
-        cout << "Costo promedio: " << TablaDeEnrutamiento.getAverageCost() << endl;
+    if (tablaEnrutamiento.obtenerNumeroEntradas() > 0) {
+        cout << "Costo promedio: " << tablaEnrutamiento.obtenerCostoPromedio() << endl;
 
-        string mostExpensive = TablaDeEnrutamiento.getMostExpensiveRoute();
-        if (!mostExpensive.empty()) {
-            cout << "Ruta más costosa: " << mostExpensive
-                 << " (costo: " << TablaDeEnrutamiento.getCostTo(mostExpensive) << ")" << endl;
+        string masCostosa = tablaEnrutamiento.obtenerRutaMasCostosa();
+        if (!masCostosa.empty()) {
+            cout << "Ruta mas costosa: " << masCostosa
+                 << " (costo: " << tablaEnrutamiento.obtenerCostoHacia(masCostosa) << ")" << endl;
         }
 
-        string cheapest = TablaDeEnrutamiento.getCheapestRoute();
-        if (!cheapest.empty()) {
-            cout << "Ruta más económica: " << cheapest
-                 << " (costo: " << TablaDeEnrutamiento.getCostTo(cheapest) << ")" << endl;
+        string masBarata = tablaEnrutamiento.obtenerRutaMasEconomica();
+        if (!masBarata.empty()) {
+            cout << "Ruta mas economica: " << masBarata
+                 << " (costo: " << tablaEnrutamiento.obtenerCostoHacia(masBarata) << ")" << endl;
         }
     }
 

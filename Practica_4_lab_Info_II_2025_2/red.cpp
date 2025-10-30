@@ -1,4 +1,3 @@
-// Network.cpp
 #include "Red.h"
 #include <iostream>
 #include <fstream>
@@ -8,45 +7,46 @@
 #include <set>
 #include <cstdlib>
 #include <ctime>
+#include <limits>
 
 Red::Red() {}
 
-void Red::addRouter(string routerId) {
-    if (routers.find(routerId) == routers.end()) {
-        routers[routerId] = Router(routerId);
-        cout << "Router " << routerId << " agregado a la red." << endl;
+void Red::agregarRouter(string idRouter) {
+    if (routers.find(idRouter) == routers.end()) {
+        routers[idRouter] = Router(idRouter);
+        cout << "Router " << idRouter << " agregado a la red." << endl;
     } else {
-        cout << "El router " << routerId << " ya existe en la red." << endl;
+        cout << "El router " << idRouter << " ya existe en la red." << endl;
     }
 }
 
-void Red::removeRouter(string routerId) {
-    if (routers.find(routerId) == routers.end()) {
-        cout << "El router " << routerId << " no existe en la red." << endl;
+void Red::eliminarRouter(string idRouter) {
+    if (routers.find(idRouter) == routers.end()) {
+        cout << "El router " << idRouter << " no existe en la red." << endl;
         return;
     }
 
     // Primero, remover todas las referencias a este router en otros routers
-    for (auto& pair : routers) {
-        if (pair.first != routerId) {
-            pair.second.removeNeighbor(routerId);
+    for (auto& par : routers) {
+        if (par.first != idRouter) {
+            par.second.eliminarVecino(idRouter);
         }
     }
 
     // Luego eliminar el router
-    routers.erase(routerId);
-    cout << "Router " << routerId << " eliminado de la red." << endl;
+    routers.erase(idRouter);
+    cout << "Router " << idRouter << " eliminado de la red." << endl;
 
     // Actualizar todas las tablas de enrutamiento
-    updateAllRoutingTables();
+    actualizarTodasLasTablas();
 }
 
-bool Red::routerExists(string routerId) const {
-    return routers.find(routerId) != routers.end();
+bool Red::existeRouter(string idRouter) const {
+    return routers.find(idRouter) != routers.end();
 }
 
-void Red::addLink(string router1, string router2, int cost) {
-    if (!routerExists(router1) || !routerExists(router2)) {
+void Red::agregarEnlace(string router1, string router2, int costo) {
+    if (!existeRouter(router1) || !existeRouter(router2)) {
         cout << "Error: Uno o ambos routers no existen." << endl;
         return;
     }
@@ -57,389 +57,383 @@ void Red::addLink(string router1, string router2, int cost) {
     }
 
     // Los enlaces son bidireccionales
-    routers[router1].addNeighbor(router2, cost);
-    routers[router2].addNeighbor(router1, cost);
+    routers[router1].agregarVecino(router2, costo);
+    routers[router2].agregarVecino(router1, costo);
 
     cout << "Enlace agregado: " << router1 << " <-> " << router2
-         << " (costo: " << cost << ")" << endl;
+         << " (costo: " << costo << ")" << endl;
 }
 
-void Red::removeLink(string router1, string router2) {
-    if (!routerExists(router1) || !routerExists(router2)) {
+void Red::eliminarEnlace(string router1, string router2) {
+    if (!existeRouter(router1) || !existeRouter(router2)) {
         cout << "Error: Uno o ambos routers no existen." << endl;
         return;
     }
 
-    routers[router1].removeNeighbor(router2);
-    routers[router2].removeNeighbor(router1);
+    routers[router1].eliminarVecino(router2);
+    routers[router2].eliminarVecino(router1);
 
     cout << "Enlace eliminado entre " << router1 << " y " << router2 << endl;
 
     // Actualizar tablas de enrutamiento
-    updateAllRoutingTables();
+    actualizarTodasLasTablas();
 }
 
-void Red::updateLinkCost(string router1, string router2, int newCost) {
-    if (!routerExists(router1) || !routerExists(router2)) {
+void Red::actualizarCostoEnlace(string router1, string router2, int nuevoCosto) {
+    if (!existeRouter(router1) || !existeRouter(router2)) {
         cout << "Error: Uno o ambos routers no existen." << endl;
         return;
     }
 
-    routers[router1].updateNeighborCost(router2, newCost);
-    routers[router2].updateNeighborCost(router1, newCost);
+    routers[router1].actualizarCostoVecino(router2, nuevoCosto);
+    routers[router2].actualizarCostoVecino(router1, nuevoCosto);
 
     cout << "Costo del enlace actualizado: " << router1 << " <-> " << router2
-         << " (nuevo costo: " << newCost << ")" << endl;
+         << " (nuevo costo: " << nuevoCosto << ")" << endl;
 
     // Actualizar tablas de enrutamiento
-    updateAllRoutingTables();
+    actualizarTodasLasTablas();
 }
 
-map<string, RoutingEntry> Red::calculateShortestPaths(string sourceId) {
-    map<string, RoutingEntry> result;
+map<string, EntradaDeEnrutamiento> Red::calcularCaminosMasCortos(string idOrigen) {
+    map<string, EntradaDeEnrutamiento> resultado;
 
     // Verificar que el router fuente existe
-    if (routers.find(sourceId) == routers.end()) {
-        return result;
+    if (routers.find(idOrigen) == routers.end()) {
+        return resultado;
     }
 
     // Inicialización
-    // distances: mantiene la distancia más corta conocida desde source a cada nodo
-    map<string, int> distances;
-
-    // previous: mantiene el nodo previo en el camino más corto
-    map<string, string> previous;
-
-    // visited: conjunto de nodos ya procesados
-    set<string> visited;
+    map<string, int> distancias;
+    map<string, string> previo;
+    set<string> visitados;
 
     // Priority queue: pair<distancia, nodo>
-    // La priority_queue en C++ es un max-heap, pero queremos min-heap
-    // Por eso usamos greater<pair<int, string>>
     priority_queue<pair<int, string>,
                    vector<pair<int, string>>,
-                   greater<pair<int, string>>> pq;
+                   greater<pair<int, string>>> colaPrioridad;
 
     // Inicializar todas las distancias como infinito
-    for (const auto& pair : routers) {
-        distances[pair.first] = numeric_limits<int>::max();
+    for (const auto& par : routers) {
+        distancias[par.first] = numeric_limits<int>::max();
     }
 
     // La distancia al nodo fuente es 0
-    distances[sourceId] = 0;
-    pq.push({0, sourceId});
+    distancias[idOrigen] = 0;
+    colaPrioridad.push({0, idOrigen});
 
     // Algoritmo de Dijkstra
-    while (!pq.empty()) {
-        // Extraer el nodo con menor distancia
-        string currentNode = pq.top().second;
-        int currentDist = pq.top().first;
-        pq.pop();
+    while (!colaPrioridad.empty()) {
+        string nodoActual = colaPrioridad.top().second;
+        int distanciaActual = colaPrioridad.top().first;
+        colaPrioridad.pop();
 
         // Si ya visitamos este nodo, continuar
-        if (visited.find(currentNode) != visited.end()) {
+        if (visitados.find(nodoActual) != visitados.end()) {
             continue;
         }
 
         // Marcar como visitado
-        visited.insert(currentNode);
+        visitados.insert(nodoActual);
 
         // Revisar todos los vecinos
-        map<string, int> neighbors = routers[currentNode].getNeighbors();
-        for (const auto& neighbor : neighbors) {
-            string neighborId = neighbor.first;
-            int edgeCost = neighbor.second;
+        map<string, int> vecinos = routers[nodoActual].obtenerVecinos();
+        for (const auto& vecino : vecinos) {
+            string idVecino = vecino.first;
+            int costoEnlace = vecino.second;
 
             // Calcular nueva distancia
-            int newDist = currentDist + edgeCost;
+            int nuevaDistancia = distanciaActual + costoEnlace;
 
             // Si encontramos un camino más corto
-            if (newDist < distances[neighborId]) {
-                distances[neighborId] = newDist;
-                previous[neighborId] = currentNode;
-                pq.push({newDist, neighborId});
+            if (nuevaDistancia < distancias[idVecino]) {
+                distancias[idVecino] = nuevaDistancia;
+                previo[idVecino] = nodoActual;
+                colaPrioridad.push({nuevaDistancia, idVecino});
             }
         }
     }
 
     // Construir las entradas de la tabla de enrutamiento
-    for (const auto& pair : routers) {
-        string destId = pair.first;
+    for (const auto& par : routers) {
+        string idDestino = par.first;
 
         // No incluir al mismo nodo fuente
-        if (destId == sourceId) {
+        if (idDestino == idOrigen) {
             continue;
         }
 
         // Si hay un camino válido
-        if (distances[destId] != numeric_limits<int>::max()) {
-            RoutingEntry entry;
-            entry.destination = destId;
-            entry.cost = distances[destId];
+        if (distancias[idDestino] != numeric_limits<int>::max()) {
+            EntradaDeEnrutamiento entrada;
+            entrada.destino = idDestino;
+            entrada.costo = distancias[idDestino];
 
             // Reconstruir el camino desde destino hacia fuente
-            vector<string> pathReverse;
-            string current = destId;
+            vector<string> caminoInverso;
+            string actual = idDestino;
 
-            while (current != sourceId) {
-                pathReverse.push_back(current);
-                current = previous[current];
+            while (actual != idOrigen) {
+                caminoInverso.push_back(actual);
+                actual = previo[actual];
             }
-            pathReverse.push_back(sourceId);
+            caminoInverso.push_back(idOrigen);
 
             // Invertir el camino para que vaya de fuente a destino
-            entry.path = vector<string>(pathReverse.rbegin(), pathReverse.rend());
+            entrada.camino = vector<string>(caminoInverso.rbegin(), caminoInverso.rend());
 
-            result[destId] = entry;
+            // Calcular siguiente salto
+            if (entrada.camino.size() >= 2) {
+                entrada.siguienteSalto = entrada.camino[1];
+            }
+
+            resultado[idDestino] = entrada;
         }
     }
 
-    return result;
+    return resultado;
 }
 
-void Red::updateAllRoutingTables() {
+void Red::actualizarTodasLasTablas() {
     cout << "\nActualizando tablas de enrutamiento..." << endl;
 
     // Para cada router, calcular sus rutas más cortas
-    for (auto& pair : routers) {
-        string routerId = pair.first;
-        map<string, RoutingEntry> routingTable = calculateShortestPaths(routerId);
-        pair.second.updateRoutingTable(routingTable);
+    for (auto& par : routers) {
+        string idRouter = par.first;
+        map<string, EntradaDeEnrutamiento> tablaEnrutamiento = calcularCaminosMasCortos(idRouter);
+        par.second.actualizarTablaEnrutamiento(tablaEnrutamiento);
     }
 
     cout << "Tablas de enrutamiento actualizadas." << endl;
 }
 
-int Red::getCostBetween(string source, string destination) const {
-    if (!routerExists(source) || !routerExists(destination)) {
+int Red::obtenerCostoEntre(string origen, string destino) const {
+    if (!existeRouter(origen) || !existeRouter(destino)) {
         cout << "Error: Uno o ambos routers no existen." << endl;
         return -1;
     }
 
-    if (source == destination) {
+    if (origen == destino) {
         return 0;
     }
 
-    return routers.at(source).getCostTo(destination);
+    return routers.at(origen).obtenerCostoHacia(destino);
 }
 
-vector<string> Red::getPathBetween(string source, string destination) const {
-    if (!routerExists(source) || !routerExists(destination)) {
+vector<string> Red::obtenerCaminoEntre(string origen, string destino) const {
+    if (!existeRouter(origen) || !existeRouter(destino)) {
         cout << "Error: Uno o ambos routers no existen." << endl;
         return vector<string>();
     }
 
-    if (source == destination) {
-        return vector<string>{source};
+    if (origen == destino) {
+        return vector<string>{origen};
     }
 
-    return routers.at(source).getPathTo(destination);
+    return routers.at(origen).obtenerCaminoHacia(destino);
 }
 
-void Red::displayNetwork() const {
+void Red::mostrarRed() const {
     cout << "\n========== RED DE ENRUTADORES ==========" << endl;
     cout << "Total de routers: " << routers.size() << endl;
     cout << "\nConexiones:" << endl;
 
-    for (const auto& pair : routers) {
-        string routerId = pair.first;
-        map<string, int> neighbors = pair.second.getNeighbors();
+    for (const auto& par : routers) {
+        string idRouter = par.first;
+        map<string, int> vecinos = par.second.obtenerVecinos();
 
-        cout << "\nRouter " << routerId << " conectado a:" << endl;
-        if (neighbors.empty()) {
+        cout << "\nRouter " << idRouter << " conectado a:" << endl;
+        if (vecinos.empty()) {
             cout << "  (sin conexiones)" << endl;
         } else {
-            for (const auto& neighbor : neighbors) {
-                cout << "  - " << neighbor.first
-                     << " (costo: " << neighbor.second << ")" << endl;
+            for (const auto& vecino : vecinos) {
+                cout << "  - " << vecino.first
+                     << " (costo: " << vecino.second << ")" << endl;
             }
         }
     }
     cout << "========================================\n" << endl;
 }
 
-void Red::displayRouterTable(string routerId) const {
-    if (!routerExists(routerId)) {
-        cout << "Error: El router " << routerId << " no existe." << endl;
+void Red::mostrarTablaRouter(string idRouter) const {
+    if (!existeRouter(idRouter)) {
+        cout << "Error: El router " << idRouter << " no existe." << endl;
         return;
     }
 
-    routers.at(routerId).displayRoutingTable();
+    routers.at(idRouter).mostrarTablaEnrutamiento();
 }
 
-// Continuación de Network.cpp
+void Red::cargarDesdeArchivo(string nombreArchivo) {
+    ifstream archivo(nombreArchivo);
 
-void Red::loadFromFile(string filename) {
-    ifstream file(filename);
-
-    if (!file.is_open()) {
-        cout << "Error: No se pudo abrir el archivo " << filename << endl;
+    if (!archivo.is_open()) {
+        cout << "Error: No se pudo abrir el archivo " << nombreArchivo << endl;
         return;
     }
 
-    cout << "\nCargando red desde archivo: " << filename << endl;
+    cout << "\nCargando red desde archivo: " << nombreArchivo << endl;
 
     // Limpiar la red actual
     routers.clear();
 
-    string line;
-    int lineNum = 0;
+    string linea;
+    int numeroLinea = 0;
 
-    while (getline(file, line)) {
-        lineNum++;
+    while (getline(archivo, linea)) {
+        numeroLinea++;
 
         // Ignorar líneas vacías y comentarios
-        if (line.empty() || line[0] == '#') {
+        if (linea.empty() || linea[0] == '#') {
             continue;
         }
 
         // Usar stringstream para parsear la línea
-        stringstream ss(line);
+        stringstream ss(linea);
         string router1, router2;
-        int cost;
+        int costo;
 
         // Formato esperado: RouterA RouterB Costo
-        if (ss >> router1 >> router2 >> cost) {
+        if (ss >> router1 >> router2 >> costo) {
             // Agregar routers si no existen
-            if (!routerExists(router1)) {
-                addRouter(router1);
+            if (!existeRouter(router1)) {
+                agregarRouter(router1);
             }
-            if (!routerExists(router2)) {
-                addRouter(router2);
+            if (!existeRouter(router2)) {
+                agregarRouter(router2);
             }
 
             // Agregar el enlace
-            addLink(router1, router2, cost);
+            agregarEnlace(router1, router2, costo);
         } else {
-            cout << "Advertencia: Linea " << lineNum
+            cout << "Advertencia: Linea " << numeroLinea
                  << " tiene formato invalido y sera ignorada." << endl;
         }
     }
 
-    file.close();
+    archivo.close();
 
     // Calcular tablas de enrutamiento
-    updateAllRoutingTables();
+    actualizarTodasLasTablas();
 
     cout << "Red cargada exitosamente. Total de routers: "
          << routers.size() << endl;
 }
 
-void Red::saveToFile(string filename) const {
-    ofstream file(filename);
+void Red::guardarEnArchivo(string nombreArchivo) const {
+    ofstream archivo(nombreArchivo);
 
-    if (!file.is_open()) {
-        cout << "Error: No se pudo crear el archivo " << filename << endl;
+    if (!archivo.is_open()) {
+        cout << "Error: No se pudo crear el archivo " << nombreArchivo << endl;
         return;
     }
 
-    file << "# Archivo de topología de red" << endl;
-    file << "# Formato: Router1 Router2 Costo" << endl;
-    file << "# Los enlaces son bidireccionales" << endl;
-    file << endl;
+    archivo << "# Archivo de topologia de red" << endl;
+    archivo << "# Formato: Router1 Router2 Costo" << endl;
+    archivo << "# Los enlaces son bidireccionales" << endl;
+    archivo << endl;
 
     // Para evitar duplicados (A-B y B-A), usamos un set de pares ordenados
-    set<pair<string, string>> savedLinks;
+    set<pair<string, string>> enlacesGuardados;
 
-    for (const auto& pair : routers) {
-        string routerId = pair.first;
-        map<string, int> neighbors = pair.second.getNeighbors();
+    for (const auto& par : routers) {
+        string idRouter = par.first;
+        map<string, int> vecinos = par.second.obtenerVecinos();
 
-        for (const auto& neighbor : neighbors) {
-            string neighborId = neighbor.first;
-            int cost = neighbor.second;
+        for (const auto& vecino : vecinos) {
+            string idVecino = vecino.first;
+            int costo = vecino.second;
 
             // Crear par ordenado
-            pair<string, string> link;
-            if (routerId < neighborId) {
-                link = {routerId, neighborId};
+            pair<string, string> enlace;
+            if (idRouter < idVecino) {
+                enlace = {idRouter, idVecino};
             } else {
-                link = {neighborId, routerId};
+                enlace = {idVecino, idRouter};
             }
 
             // Si no hemos guardado este enlace
-            if (savedLinks.find(link) == savedLinks.end()) {
-                file << routerId << " " << neighborId << " " << cost << endl;
-                savedLinks.insert(link);
+            if (enlacesGuardados.find(enlace) == enlacesGuardados.end()) {
+                archivo << idRouter << " " << idVecino << " " << costo << endl;
+                enlacesGuardados.insert(enlace);
             }
         }
     }
 
-    file.close();
-    cout << "Red guardada en: " << filename << endl;
+    archivo.close();
+    cout << "Red guardada en: " << nombreArchivo << endl;
 }
 
-void Red::generateRandomNetwork(int numRouters, int numLinks) {
+void Red::generarRedAleatoria(int numRouters, int numEnlaces) {
     if (numRouters < 2) {
         cout << "Error: Se necesitan al menos 2 routers." << endl;
         return;
     }
 
     // Calcular número máximo de enlaces posibles
-    int maxLinks = (numRouters * (numRouters - 1)) / 2;
+    int maxEnlaces = (numRouters * (numRouters - 1)) / 2;
 
-    if (numLinks > maxLinks) {
+    if (numEnlaces > maxEnlaces) {
         cout << "Advertencia: Demasiados enlaces solicitados. ";
-        cout << "Usando maximo posible: " << maxLinks << endl;
-        numLinks = maxLinks;
+        cout << "Usando maximo posible: " << maxEnlaces << endl;
+        numEnlaces = maxEnlaces;
     }
 
     // Limpiar red actual
     routers.clear();
 
     cout << "\nGenerando red aleatoria..." << endl;
-    cout << "Routers: " << numRouters << ", Enlaces: " << numLinks << endl;
+    cout << "Routers: " << numRouters << ", Enlaces: " << numEnlaces << endl;
 
     // Inicializar generador de números aleatorios
     srand(time(NULL));
 
     // Crear routers con IDs: R0, R1, R2, ...
-    vector<string> routerIds;
+    vector<string> idsRouters;
     for (int i = 0; i < numRouters; i++) {
         string id = "R" + to_string(i);
-        addRouter(id);
-        routerIds.push_back(id);
+        agregarRouter(id);
+        idsRouters.push_back(id);
     }
 
     // Primero, crear un árbol de expansión para garantizar conectividad
-    // Esto asegura que todos los nodos sean alcanzables
-    cout << "Creando conectividad básica..." << endl;
+    cout << "Creando conectividad basica..." << endl;
 
     for (int i = 1; i < numRouters; i++) {
         // Conectar router i con un router aleatorio entre 0 e i-1
-        int randomPrev = rand() % i;
-        int cost = (rand() % 20) + 1; // Costo entre 1 y 20
+        int previoAleatorio = rand() % i;
+        int costo = (rand() % 20) + 1; // Costo entre 1 y 20
 
-        addLink(routerIds[i], routerIds[randomPrev], cost);
+        agregarEnlace(idsRouters[i], idsRouters[previoAleatorio], costo);
     }
 
     // Ahora agregar enlaces adicionales aleatorios
-    int linksCreated = numRouters - 1; // Ya creamos (numRouters-1) enlaces
-    int linksToCreate = numLinks - linksCreated;
+    int enlacesCreados = numRouters - 1;
+    int enlacesPorCrear = numEnlaces - enlacesCreados;
 
     cout << "Agregando enlaces adicionales..." << endl;
 
     // Set para rastrear enlaces ya creados
-    set<pair<string, string>> existingLinks;
+    set<pair<string, string>> enlacesExistentes;
 
     // Registrar enlaces existentes
-    for (const auto& pair : routers) {
-        string r1 = pair.first;
-        map<string, int> neighbors = pair.second.getNeighbors();
-        for (const auto& neighbor : neighbors) {
-            string r2 = neighbor.first;
-            pair<string, string> link = (r1 < r2) ?
-                                            make_pair(r1, r2) : make_pair(r2, r1);
-            existingLinks.insert(link);
+    for (const auto& par : routers) {
+        string r1 = par.first;
+        map<string, int> vecinos = par.second.obtenerVecinos();
+        for (const auto& vecino : vecinos) {
+            string r2 = vecino.first;
+            pair<string, string> enlace = (r1 < r2) ?
+                                              make_pair(r1, r2) : make_pair(r2, r1);
+            enlacesExistentes.insert(enlace);
         }
     }
 
     // Crear enlaces adicionales
-    int attempts = 0;
-    int maxAttempts = numLinks * 10; // Evitar bucle infinito
+    int intentos = 0;
+    int maxIntentos = numEnlaces * 10;
 
-    while (linksCreated < numLinks && attempts < maxAttempts) {
-        attempts++;
+    while (enlacesCreados < numEnlaces && intentos < maxIntentos) {
+        intentos++;
 
         // Elegir dos routers aleatorios diferentes
         int idx1 = rand() % numRouters;
@@ -449,73 +443,73 @@ void Red::generateRandomNetwork(int numRouters, int numLinks) {
             continue;
         }
 
-        string r1 = routerIds[idx1];
-        string r2 = routerIds[idx2];
+        string r1 = idsRouters[idx1];
+        string r2 = idsRouters[idx2];
 
         // Crear par ordenado
-        pair<string, string> link = (r1 < r2) ?
-                                        make_pair(r1, r2) : make_pair(r2, r1);
+        pair<string, string> enlace = (r1 < r2) ?
+                                          make_pair(r1, r2) : make_pair(r2, r1);
 
         // Si el enlace no existe, crearlo
-        if (existingLinks.find(link) == existingLinks.end()) {
-            int cost = (rand() % 20) + 1;
-            addLink(r1, r2, cost);
-            existingLinks.insert(link);
-            linksCreated++;
+        if (enlacesExistentes.find(enlace) == enlacesExistentes.end()) {
+            int costo = (rand() % 20) + 1;
+            agregarEnlace(r1, r2, costo);
+            enlacesExistentes.insert(enlace);
+            enlacesCreados++;
         }
     }
 
     // Calcular tablas de enrutamiento
-    updateAllRoutingTables();
+    actualizarTodasLasTablas();
 
     cout << "Red generada: " << routers.size() << " routers, "
-         << linksCreated << " enlaces." << endl;
+         << enlacesCreados << " enlaces." << endl;
 
     // Guardar en archivo para referencia
-    saveToFile("random_network.txt");
+    guardarEnArchivo("red_aleatoria.txt");
 }
 
-bool Red::routerHasRouteTo(string source, string destination) const {
-    if (!routerExists(source)) {
+bool Red::routerTieneRutaHacia(string origen, string destino) const {
+    if (!existeRouter(origen)) {
         return false;
     }
-    return routers.at(source).hasRouteTo(destination);
+    return routers.at(origen).tieneRutaHacia(destino);
 }
 
-string Red::getNextHop(string source, string destination) const {
-    if (!routerExists(source)) {
+string Red::obtenerSiguienteSalto(string origen, string destino) const {
+    if (!existeRouter(origen)) {
         return "";
     }
-    return routers.at(source).getNextHopTo(destination);
+    return routers.at(origen).obtenerSiguienteSaltoHacia(destino);
 }
 
-void Red::displayRouterStatistics(string routerId) const {
-    if (!routerExists(routerId)) {
-        cout << "Error: El router " << routerId << " no existe." << endl;
+void Red::mostrarEstadisticasRouter(string idRouter) const {
+    if (!existeRouter(idRouter)) {
+        cout << "Error: El router " << idRouter << " no existe." << endl;
         return;
     }
-    routers.at(routerId).displayStatistics();
+    routers.at(idRouter).mostrarEstadisticas();
 }
 
-TablaDeEnrutamiento Red::getRouterTable(string routerId) const {
-    if (!routerExists(routerId)) {
+TablaDeEnrutamiento Red::obtenerTablaRouter(string idRouter) const {
+    if (!existeRouter(idRouter)) {
         return TablaDeEnrutamiento();
     }
-    return routers.at(routerId).getRoutingTable();
+    return routers.at(idRouter).obtenerTablaEnrutamiento();
 }
 
-void Red::compareRouterTables(string router1, string router2) const {
-    if (!routerExists(router1) || !routerExists(router2)) {
+void Red::compararTablasRouters(string router1, string router2) const {
+    if (!existeRouter(router1) || !existeRouter(router2)) {
         cout << "Error: Uno o ambos routers no existen." << endl;
         return;
     }
 
-    TablaDeEnrutamiento table1 = routers.at(router1).getRoutingTable();
-    TablaDeEnrutamiento table2 = routers.at(router2).getRoutingTable();
+    TablaDeEnrutamiento tabla1 = routers.at(router1).obtenerTablaEnrutamiento();
+    TablaDeEnrutamiento tabla2 = routers.at(router2).obtenerTablaEnrutamiento();
 
-    cout << "\n=== Comparación de tablas ===" << endl;
-    cout << router1 << ": " << table1.getNumEntries() << " rutas, "
-         << "costo promedio: " << table1.getAverageCost() << endl;
-    cout << router2 << ": " << table2.getNumEntries() << " rutas, "
-         << "costo promedio: " << table2.getAverageCost() << endl;
+    cout << "\n=== Comparacion de tablas ===" << endl;
+    cout << router1 << ": " << tabla1.obtenerNumeroEntradas() << " rutas, "
+         << "costo promedio: " << tabla1.obtenerCostoPromedio() << endl;
+    cout << router2 << ": " << tabla2.obtenerNumeroEntradas() << " rutas, "
+         << "costo promedio: " << tabla2.obtenerCostoPromedio() << endl;
 }

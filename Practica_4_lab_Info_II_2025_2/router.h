@@ -10,39 +10,39 @@ using namespace std;
 
 class Router {
 private:
-    string id;                           // Identificador del enrutador
-    map<string, int> neighbors;          // Vecinos directos y sus costos
-    TablaDeEnrutamiento TablaDeEnrutamiento;           // Tabla de enrutamiento (ahora es un objeto)
+    string id;                              // Identificador del enrutador
+    map<string, int> vecinos;               // Vecinos directos y sus costos
+    TablaDeEnrutamiento tablaEnrutamiento;  // Tabla de enrutamiento (objeto, NO clase)
 
 public:
     // Constructores
     Router();
-    Router(string routerId);
+    Router(string idRouter);
 
     // Getters
-    string getId() const;
-    map<string, int> getNeighbors() const;
-    TablaDeEnrutamiento getRoutingTable() const;  // Ahora devuelve objeto RoutingTable
-    TablaDeEnrutamiento* getRoutingTablePtr();    // Para modificación directa
+    string obtenerId() const;
+    map<string, int> obtenerVecinos() const;
+    TablaDeEnrutamiento obtenerTablaEnrutamiento() const;
+    TablaDeEnrutamiento* obtenerPunteroTablaEnrutamiento();
 
     // Métodos para gestionar vecinos
-    void addNeighbor(string neighborId, int cost);
-    void removeNeighbor(string neighborId);
-    void updateNeighborCost(string neighborId, int newCost);
-    bool isNeighbor(string routerId) const;
+    void agregarVecino(string idVecino, int costo);
+    void eliminarVecino(string idVecino);
+    void actualizarCostoVecino(string idVecino, int nuevoCosto);
+    bool esVecino(string idRouter) const;
 
     // Métodos para la tabla de enrutamiento
-    void updateRoutingTable(const map<string, RoutingEntry>& newTable);
-    void displayRoutingTable() const;
+    void actualizarTablaEnrutamiento(const map<string, EntradaDeEnrutamiento>& nuevaTabla);
+    void mostrarTablaEnrutamiento() const;
 
-    // Consultas de enrutamiento (delegan a RoutingTable)
-    int getCostTo(string destination) const;
-    vector<string> getPathTo(string destination) const;
-    string getNextHopTo(string destination) const;
-    bool hasRouteTo(string destination) const;
+    // Consultas de enrutamiento (delegan a TablaDeEnrutamiento)
+    int obtenerCostoHacia(string destino) const;
+    vector<string> obtenerCaminoHacia(string destino) const;
+    string obtenerSiguienteSaltoHacia(string destino) const;
+    bool tieneRutaHacia(string destino) const;
 
     // Análisis
-    void displayStatistics() const;
+    void mostrarEstadisticas() const;
 };
 
 #endif

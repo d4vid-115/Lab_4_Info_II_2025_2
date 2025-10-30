@@ -1,96 +1,93 @@
 #include "tabladeenrutamiento.h"
-
-TablaDeEnrutamiento::TablaDeEnrutamiento() {}
-
-#include "tabladeenrutamiento.h"
 #include <iomanip>
 #include <algorithm>
 #include <numeric>
+#include <limits>
 
-TablaDeEnrutamiento::TablaDeEnrutamiento() : ownerId("") {}
+TablaDeEnrutamiento::TablaDeEnrutamiento() : idPropietario("") {}
 
-TablaDeEnrutamiento::TablaDeEnrutamiento(string routerId) : ownerId(routerId) {}
+TablaDeEnrutamiento::TablaDeEnrutamiento(string idRouter) : idPropietario(idRouter) {}
 
-void TablaDeEnrutamiento::addEntry(const RoutingEntry& entry) {
-    entries[entry.destination] = entry;
+void TablaDeEnrutamiento::agregarEntrada(const EntradaDeEnrutamiento& entrada) {
+    entradas[entrada.destino] = entrada;
 }
 
-void TablaDeEnrutamiento::addEntry(string destination, int cost, vector<string> path) {
-    RoutingEntry entry(destination, cost, path);
-    entries[destination] = entry;
+void TablaDeEnrutamiento::agregarEntrada(string destino, int costo, vector<string> camino) {
+    EntradaDeEnrutamiento entrada(destino, costo, camino);
+    entradas[destino] = entrada;
 }
 
-bool TablaDeEnrutamiento::removeEntry(string destination) {
-    auto it = entries.find(destination);
-    if (it != entries.end()) {
-        entries.erase(it);
+bool TablaDeEnrutamiento::eliminarEntrada(string destino) {
+    auto it = entradas.find(destino);
+    if (it != entradas.end()) {
+        entradas.erase(it);
         return true;
     }
     return false;
 }
 
-void TablaDeEnrutamiento::clear() {
-    entries.clear();
+void TablaDeEnrutamiento::limpiar() {
+    entradas.clear();
 }
 
-bool TablaDeEnrutamiento::hasRouteTo(string destination) const {
-    return entries.find(destination) != entries.end();
+bool TablaDeEnrutamiento::tieneRutaHacia(string destino) const {
+    return entradas.find(destino) != entradas.end();
 }
 
-int TablaDeEnrutamiento::getCostTo(string destination) const {
-    auto it = entries.find(destination);
-    if (it != entries.end()) {
-        return it->second.cost;
+int TablaDeEnrutamiento::obtenerCostoHacia(string destino) const {
+    auto it = entradas.find(destino);
+    if (it != entradas.end()) {
+        return it->second.costo;
     }
     return -1; // No hay ruta
 }
 
-vector<string> TablaDeEnrutamiento::getPathTo(string destination) const {
-    auto it = entries.find(destination);
-    if (it != entries.end()) {
-        return it->second.path;
+vector<string> TablaDeEnrutamiento::obtenerCaminoHacia(string destino) const {
+    auto it = entradas.find(destino);
+    if (it != entradas.end()) {
+        return it->second.camino;
     }
     return vector<string>(); // Vector vacío
 }
 
-string TablaDeEnrutamiento::getNextHopTo(string destination) const {
-    auto it = entries.find(destination);
-    if (it != entries.end()) {
-        return it->second.nextHop;
+string TablaDeEnrutamiento::obtenerSiguienteSaltoHacia(string destino) const {
+    auto it = entradas.find(destino);
+    if (it != entradas.end()) {
+        return it->second.siguienteSalto;
     }
     return ""; // No hay siguiente salto
 }
 
-RoutingEntry TablaDeEnrutamiento::getEntry(string destination) const {
-    auto it = entries.find(destination);
-    if (it != entries.end()) {
+EntradaDeEnrutamiento TablaDeEnrutamiento::obtenerEntrada(string destino) const {
+    auto it = entradas.find(destino);
+    if (it != entradas.end()) {
         return it->second;
     }
-    return RoutingEntry(); // Entrada vacía
+    return EntradaDeEnrutamiento(); // Entrada vacía
 }
 
-string TablaDeEnrutamiento::getOwnerId() const {
-    return ownerId;
+string TablaDeEnrutamiento::obtenerIdPropietario() const {
+    return idPropietario;
 }
 
-int TablaDeEnrutamiento::getNumEntries() const {
-    return entries.size();
+int TablaDeEnrutamiento::obtenerNumeroEntradas() const {
+    return entradas.size();
 }
 
-map<string, RoutingEntry> TablaDeEnrutamiento::getAllEntries() const {
-    return entries;
+map<string, EntradaDeEnrutamiento> TablaDeEnrutamiento::obtenerTodasLasEntradas() const {
+    return entradas;
 }
 
-void TablaDeEnrutamiento::updateTable(const map<string, RoutingEntry>& newEntries) {
-    entries = newEntries;
+void TablaDeEnrutamiento::actualizarTabla(const map<string, EntradaDeEnrutamiento>& nuevasEntradas) {
+    entradas = nuevasEntradas;
 }
 
-void TablaDeEnrutamiento::display() const {
+void TablaDeEnrutamiento::mostrar() const {
     cout << "\n╔════════════════════════════════════════════════════════════════╗" << endl;
-    cout << "║   Tabla de Enrutamiento del Router " << setw(25) << left << ownerId << "  ║" << endl;
+    cout << "║   Tabla de Enrutamiento del Router " << setw(25) << left << idPropietario << "  ║" << endl;
     cout << "╠════════════════════════════════════════════════════════════════╣" << endl;
 
-    if (entries.empty()) {
+    if (entradas.empty()) {
         cout << "║  (Tabla vacía - Sin rutas disponibles)                        ║" << endl;
         cout << "╚════════════════════════════════════════════════════════════════╝" << endl;
         return;
@@ -98,53 +95,53 @@ void TablaDeEnrutamiento::display() const {
 
     cout << "║ " << setw(12) << left << "Destino"
          << setw(8) << "Costo"
-         << setw(12) << "Next Hop"
+         << setw(12) << "Sig. Salto"
          << setw(30) << "Camino Completo" << " ║" << endl;
     cout << "╠════════════════════════════════════════════════════════════════╣" << endl;
 
-    for (const auto& entry : entries) {
-        cout << "║ " << setw(12) << left << entry.first
-             << setw(8) << entry.second.cost
-             << setw(12) << entry.second.nextHop << " ";
+    for (const auto& entrada : entradas) {
+        cout << "║ " << setw(12) << left << entrada.first
+             << setw(8) << entrada.second.costo
+             << setw(12) << entrada.second.siguienteSalto << " ";
 
         // Mostrar camino
-        string pathStr = "";
-        for (size_t i = 0; i < entry.second.path.size(); i++) {
-            pathStr += entry.second.path[i];
-            if (i < entry.second.path.size() - 1) {
-                pathStr += "→";
+        string caminoStr = "";
+        for (size_t i = 0; i < entrada.second.camino.size(); i++) {
+            caminoStr += entrada.second.camino[i];
+            if (i < entrada.second.camino.size() - 1) {
+                caminoStr += " -> ";
             }
         }
-        cout << setw(29) << left << pathStr << "║" << endl;
+        cout << setw(29) << left << caminoStr << "║" << endl;
     }
 
     cout << "╚════════════════════════════════════════════════════════════════╝" << endl;
-    cout << "Total de rutas: " << entries.size() << endl;
+    cout << "Total de rutas: " << entradas.size() << endl;
 }
 
-void TablaDeEnrutamiento::displayCompact() const {
-    cout << "\nTabla de " << ownerId << " (" << entries.size() << " rutas):" << endl;
+void TablaDeEnrutamiento::mostrarCompacta() const {
+    cout << "\nTabla de " << idPropietario << " (" << entradas.size() << " rutas):" << endl;
 
-    for (const auto& entry : entries) {
-        cout << "  → " << entry.first
-             << " [costo: " << entry.second.cost
-             << ", via: " << entry.second.nextHop << "]" << endl;
+    for (const auto& entrada : entradas) {
+        cout << "  -> " << entrada.first
+             << " [costo: " << entrada.second.costo
+             << ", via: " << entrada.second.siguienteSalto << "]" << endl;
     }
 }
 
-bool TablaDeEnrutamiento::equals(const TablaDeEnrutamiento& other) const {
-    if (entries.size() != other.entries.size()) {
+bool TablaDeEnrutamiento::esIgualA(const TablaDeEnrutamiento& otra) const {
+    if (entradas.size() != otra.entradas.size()) {
         return false;
     }
 
-    for (const auto& entry : entries) {
-        string dest = entry.first;
+    for (const auto& entrada : entradas) {
+        string dest = entrada.first;
 
-        if (!other.hasRouteTo(dest)) {
+        if (!otra.tieneRutaHacia(dest)) {
             return false;
         }
 
-        if (entry.second.cost != other.getCostTo(dest)) {
+        if (entrada.second.costo != otra.obtenerCostoHacia(dest)) {
             return false;
         }
     }
@@ -152,61 +149,61 @@ bool TablaDeEnrutamiento::equals(const TablaDeEnrutamiento& other) const {
     return true;
 }
 
-string TablaDeEnrutamiento::getMostExpensiveRoute() const {
-    if (entries.empty()) {
+string TablaDeEnrutamiento::obtenerRutaMasCostosa() const {
+    if (entradas.empty()) {
         return "";
     }
 
-    int maxCost = -1;
-    string maxDest = "";
+    int costoMaximo = -1;
+    string destinoMaximo = "";
 
-    for (const auto& entry : entries) {
-        if (entry.second.cost > maxCost) {
-            maxCost = entry.second.cost;
-            maxDest = entry.first;
+    for (const auto& entrada : entradas) {
+        if (entrada.second.costo > costoMaximo) {
+            costoMaximo = entrada.second.costo;
+            destinoMaximo = entrada.first;
         }
     }
 
-    return maxDest;
+    return destinoMaximo;
 }
 
-string TablaDeEnrutamiento::getCheapestRoute() const {
-    if (entries.empty()) {
+string TablaDeEnrutamiento::obtenerRutaMasEconomica() const {
+    if (entradas.empty()) {
         return "";
     }
 
-    int minCost = numeric_limits<int>::max();
-    string minDest = "";
+    int costoMinimo = numeric_limits<int>::max();
+    string destinoMinimo = "";
 
-    for (const auto& entry : entries) {
-        if (entry.second.cost < minCost) {
-            minCost = entry.second.cost;
-            minDest = entry.first;
+    for (const auto& entrada : entradas) {
+        if (entrada.second.costo < costoMinimo) {
+            costoMinimo = entrada.second.costo;
+            destinoMinimo = entrada.first;
         }
     }
 
-    return minDest;
+    return destinoMinimo;
 }
 
-int TablaDeEnrutamiento::getAverageCost() const {
-    if (entries.empty()) {
+int TablaDeEnrutamiento::obtenerCostoPromedio() const {
+    if (entradas.empty()) {
         return 0;
     }
 
-    int totalCost = 0;
-    for (const auto& entry : entries) {
-        totalCost += entry.second.cost;
+    int costoTotal = 0;
+    for (const auto& entrada : entradas) {
+        costoTotal += entrada.second.costo;
     }
 
-    return totalCost / entries.size();
+    return costoTotal / entradas.size();
 }
 
-vector<string> TablaDeEnrutamiento::getDestinations() const {
-    vector<string> destinations;
+vector<string> TablaDeEnrutamiento::obtenerDestinos() const {
+    vector<string> destinos;
 
-    for (const auto& entry : entries) {
-        destinations.push_back(entry.first);
+    for (const auto& entrada : entradas) {
+        destinos.push_back(entrada.first);
     }
 
-    return destinations;
+    return destinos;
 }

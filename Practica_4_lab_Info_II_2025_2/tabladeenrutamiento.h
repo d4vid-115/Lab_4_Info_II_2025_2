@@ -9,68 +9,68 @@
 using namespace std;
 
 // Estructura para representar una entrada en la tabla
-struct RoutingEntry {
-    string destination;      // Router destino
-    int cost;               // Costo total para llegar
-    vector<string> path;    // Camino completo (secuencia de nodos)
-    string nextHop;         // Siguiente salto (primer router después del origen)
+struct EntradaDeEnrutamiento {
+    string destino;              // Router destino
+    int costo;                   // Costo total para llegar
+    vector<string> camino;       // Camino completo (secuencia de nodos)
+    string siguienteSalto;       // Siguiente salto (primer router después del origen)
 
-    RoutingEntry() : destination(""), cost(-1), nextHop("") {}
+    EntradaDeEnrutamiento() : destino(""), costo(-1), siguienteSalto("") {}
 
-    RoutingEntry(string dest, int c, vector<string> p)
-        : destination(dest), cost(c), path(p) {
+    EntradaDeEnrutamiento(string dest, int c, vector<string> cam)
+        : destino(dest), costo(c), camino(cam) {
         // El siguiente salto es el segundo nodo del camino (después del origen)
-        if (path.size() >= 2) {
-            nextHop = path[1];
+        if (camino.size() >= 2) {
+            siguienteSalto = camino[1];
         } else {
-            nextHop = "";
+            siguienteSalto = "";
         }
     }
 };
 
 class TablaDeEnrutamiento {
 private:
-    string ownerId;                           // ID del router dueño de esta tabla
-    map<string, RoutingEntry> entries;        // Entradas de enrutamiento
+    string idPropietario;                              // ID del router dueño de esta tabla
+    map<string, EntradaDeEnrutamiento> entradas;       // Entradas de enrutamiento
 
 public:
     // Constructores
     TablaDeEnrutamiento();
-    TablaDeEnrutamiento(string routerId);
+    TablaDeEnrutamiento(string idRouter);
 
     // Operaciones básicas
-    void addEntry(const RoutingEntry& entry);
-    void addEntry(string destination, int cost, vector<string> path);
-    bool removeEntry(string destination);
-    void clear();
+    void agregarEntrada(const EntradaDeEnrutamiento& entrada);
+    void agregarEntrada(string destino, int costo, vector<string> camino);
+    bool eliminarEntrada(string destino);
+    void limpiar();
 
     // Consultas
-    bool hasRouteTo(string destination) const;
-    int getCostTo(string destination) const;
-    vector<string> getPathTo(string destination) const;
-    string getNextHopTo(string destination) const;
-    RoutingEntry getEntry(string destination) const;
+    bool tieneRutaHacia(string destino) const;
+    int obtenerCostoHacia(string destino) const;
+    vector<string> obtenerCaminoHacia(string destino) const;
+    string obtenerSiguienteSaltoHacia(string destino) const;
+    EntradaDeEnrutamiento obtenerEntrada(string destino) const;
 
     // Getters
-    string getOwnerId() const;
-    int getNumEntries() const;
-    map<string, RoutingEntry> getAllEntries() const;
+    string obtenerIdPropietario() const;
+    int obtenerNumeroEntradas() const;
+    map<string, EntradaDeEnrutamiento> obtenerTodasLasEntradas() const;
 
     // Actualización masiva
-    void updateTable(const map<string, RoutingEntry>& newEntries);
+    void actualizarTabla(const map<string, EntradaDeEnrutamiento>& nuevasEntradas);
 
     // Visualización
-    void display() const;
-    void displayCompact() const;
+    void mostrar() const;
+    void mostrarCompacta() const;
 
     // Comparación (útil para detectar cambios)
-    bool equals(const TablaDeEnrutamiento& other) const;
+    bool esIgualA(const TablaDeEnrutamiento& otra) const;
 
     // Análisis
-    string getMostExpensiveRoute() const;
-    string getCheapestRoute() const;
-    int getAverageCost() const;
-    vector<string> getDestinations() const;
+    string obtenerRutaMasCostosa() const;
+    string obtenerRutaMasEconomica() const;
+    int obtenerCostoPromedio() const;
+    vector<string> obtenerDestinos() const;
 };
 
 #endif
