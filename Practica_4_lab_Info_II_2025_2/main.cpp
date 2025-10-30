@@ -19,6 +19,7 @@ void imprimirMenu() {
     cout << "11. Guardar red en archivo" << endl;
     cout << "12. Generar red aleatoria" << endl;
     cout << "13. Crear red de ejemplo (A, B, C, D)" << endl;
+    cout << "14. Mostrar estadisticas de un router" << endl;  // ← NUEVA OPCIÓN
     cout << "0.  Salir" << endl;
     cout << "====================================================" << endl;
     cout << "Opcion: ";
@@ -219,6 +220,14 @@ int main() {
 
         case 13: { // Red de ejemplo
             crearRedDeEjemplo(red);
+            break;
+        }
+
+        case 14: { // Mostrar estadisticas
+            cout << "\nIngrese ID del router: ";
+            string idRouter;
+            getline(cin, idRouter);
+            red.mostrarEstadisticasRouter(idRouter);
             break;
         }
 

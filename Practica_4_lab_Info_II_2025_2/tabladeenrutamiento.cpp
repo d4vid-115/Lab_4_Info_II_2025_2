@@ -83,40 +83,39 @@ void TablaDeEnrutamiento::actualizarTabla(const map<string, EntradaDeEnrutamient
 }
 
 void TablaDeEnrutamiento::mostrar() const {
-    cout << "\n╔════════════════════════════════════════════════════════════════╗" << endl;
-    cout << "║   Tabla de Enrutamiento del Router " << setw(25) << left << idPropietario << "  ║" << endl;
-    cout << "╠════════════════════════════════════════════════════════════════╣" << endl;
+    cout << "\n================================================" << endl;
+    cout << "  Tabla de Enrutamiento del Router " << idPropietario << endl;
+    cout << "================================================" << endl;
 
     if (entradas.empty()) {
-        cout << "║  (Tabla vacía - Sin rutas disponibles)                        ║" << endl;
-        cout << "╚════════════════════════════════════════════════════════════════╝" << endl;
+        cout << "  (Tabla vacia - Sin rutas disponibles)" << endl;
+        cout << "================================================" << endl;
         return;
     }
 
-    cout << "║ " << setw(12) << left << "Destino"
+    cout << left << setw(12) << "Destino"
          << setw(8) << "Costo"
-         << setw(12) << "Sig. Salto"
-         << setw(30) << "Camino Completo" << " ║" << endl;
-    cout << "╠════════════════════════════════════════════════════════════════╣" << endl;
+         << setw(14) << "Sig. Salto"
+         << "Camino Completo" << endl;
+    cout << "------------------------------------------------" << endl;
 
     for (const auto& entrada : entradas) {
-        cout << "║ " << setw(12) << left << entrada.first
+        cout << left << setw(12) << entrada.first
              << setw(8) << entrada.second.costo
-             << setw(12) << entrada.second.siguienteSalto << " ";
+             << setw(14) << entrada.second.siguienteSalto;
 
         // Mostrar camino
-        string caminoStr = "";
         for (size_t i = 0; i < entrada.second.camino.size(); i++) {
-            caminoStr += entrada.second.camino[i];
+            cout << entrada.second.camino[i];
             if (i < entrada.second.camino.size() - 1) {
-                caminoStr += " -> ";
+                cout << " -> ";
             }
         }
-        cout << setw(29) << left << caminoStr << "║" << endl;
+        cout << endl;
     }
 
-    cout << "╚════════════════════════════════════════════════════════════════╝" << endl;
-    cout << "Total de rutas: " << entradas.size() << endl;
+    cout << "------------------------------------------------" << endl;
+    cout << "Total de rutas: " << entradas.size() << endl << endl;
 }
 
 void TablaDeEnrutamiento::mostrarCompacta() const {

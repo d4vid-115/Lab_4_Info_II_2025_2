@@ -1,0 +1,13 @@
+# Archivo de topologia de red
+# Formato: Router1 Router2 Costo
+# Los enlaces son bidireccionales
+
+b c 1
+b d 5
+b s 4
+c d 8
+c e 10
+c s 2
+d e 2
+d t 6
+e t 2
