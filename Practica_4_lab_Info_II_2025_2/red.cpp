@@ -2,8 +2,6 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <algorithm>
-#include <queue>
 #include <set>
 #include <cstdlib>
 #include <ctime>
@@ -98,78 +96,89 @@ void Red::actualizarCostoEnlace(string router1, string router2, int nuevoCosto) 
 map<string, EntradaDeEnrutamiento> Red::calcularCaminosMasCortos(string idOrigen) {
     map<string, EntradaDeEnrutamiento> resultado;
 
-    // Verificar que el router fuente existe
+    // Verificar que el router origen existe
     if (routers.find(idOrigen) == routers.end()) {
         return resultado;
     }
 
-    // Inicialización
+    // 1. Distancias: guarda la mejor distancia conocida a cada nodo
     map<string, int> distancias;
-    map<string, string> previo;
-    set<string> visitados;
 
-    // Priority queue: pair<distancia, nodo>
-    priority_queue<pair<int, string>,
-                   vector<pair<int, string>>,
-                   greater<pair<int, string>>> colaPrioridad;
+    // 2. Previo: guarda de donde venimos (para reconstruir camino)
+    map<string, string> previo;
+
+    // 3. Visitados: marca nodos con distancia definitiva
+    set<string> visitados;
 
     // Inicializar todas las distancias como infinito
     for (const auto& par : routers) {
         distancias[par.first] = numeric_limits<int>::max();
     }
 
-    // La distancia al nodo fuente es 0
+    // La distancia al nodo origen es 0
     distancias[idOrigen] = 0;
-    colaPrioridad.push({0, idOrigen});
 
-    // Algoritmo de Dijkstra
-    while (!colaPrioridad.empty()) {
-        string nodoActual = colaPrioridad.top().second;
-        int distanciaActual = colaPrioridad.top().first;
-        colaPrioridad.pop();
+    // Mientras haya nodos sin visitar
+    while (visitados.size() < routers.size()) {
 
-        // Si ya visitamos este nodo, continuar
-        if (visitados.find(nodoActual) != visitados.end()) {
-            continue;
+        string nodoActual = "";
+        int distanciaMinima = numeric_limits<int>::max();
+
+        for (const auto& par : distancias) {
+            string nodo = par.first;
+            int distancia = par.second;
+
+            // Si el nodo NO esta visitado Y tiene menor distancia
+            if (visitados.find(nodo) == visitados.end() &&
+                distancia < distanciaMinima) {
+                distanciaMinima = distancia;
+                nodoActual = nodo;
+            }
         }
 
-        // Marcar como visitado
+        // Si no encontramos ningun nodo alcanzable, terminar
+        if (nodoActual == "" || distanciaMinima == numeric_limits<int>::max()) {
+            break;
+        }
+
         visitados.insert(nodoActual);
 
-        // Revisar todos los vecinos
         map<string, int> vecinos = routers[nodoActual].obtenerVecinos();
+
         for (const auto& vecino : vecinos) {
             string idVecino = vecino.first;
             int costoEnlace = vecino.second;
 
-            // Calcular nueva distancia
-            int nuevaDistancia = distanciaActual + costoEnlace;
+            // Si el vecino ya fue visitado, ignorarlo
+            if (visitados.find(idVecino) != visitados.end()) {
+                continue;
+            }
 
-            // Si encontramos un camino más corto
+            // Calcular nueva distancia pasando por nodoActual
+            int nuevaDistancia = distancias[nodoActual] + costoEnlace;
+
+            // Si encontramos un camino MEJOR, actualizar
             if (nuevaDistancia < distancias[idVecino]) {
                 distancias[idVecino] = nuevaDistancia;
                 previo[idVecino] = nodoActual;
-                colaPrioridad.push({nuevaDistancia, idVecino});
             }
         }
     }
 
-    // Construir las entradas de la tabla de enrutamiento
     for (const auto& par : routers) {
         string idDestino = par.first;
 
-        // No incluir al mismo nodo fuente
+        // No incluir al mismo nodo origen
         if (idDestino == idOrigen) {
             continue;
         }
 
-        // Si hay un camino válido
+        // Si hay un camino valido (distancia no es infinito)
         if (distancias[idDestino] != numeric_limits<int>::max()) {
             EntradaDeEnrutamiento entrada;
             entrada.destino = idDestino;
             entrada.costo = distancias[idDestino];
 
-            // Reconstruir el camino desde destino hacia fuente
             vector<string> caminoInverso;
             string actual = idDestino;
 
@@ -179,8 +188,9 @@ map<string, EntradaDeEnrutamiento> Red::calcularCaminosMasCortos(string idOrigen
             }
             caminoInverso.push_back(idOrigen);
 
-            // Invertir el camino para que vaya de fuente a destino
-            entrada.camino = vector<string>(caminoInverso.rbegin(), caminoInverso.rend());
+            // Invertir el camino para que vaya de origen a destino
+            entrada.camino = vector<string>(caminoInverso.rbegin(),
+                                            caminoInverso.rend());
 
             // Calcular siguiente salto
             if (entrada.camino.size() >= 2) {

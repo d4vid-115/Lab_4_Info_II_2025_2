@@ -1,7 +1,5 @@
 #include "tabladeenrutamiento.h"
 #include <iomanip>
-#include <algorithm>
-#include <numeric>
 #include <limits>
 
 TablaDeEnrutamiento::TablaDeEnrutamiento() : idPropietario("") {}
